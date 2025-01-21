@@ -5,22 +5,21 @@ from .module import *
 
 class VQTCRModel(nn.Module):
     def __init__(self, params, tcr_params, rna_params,
-                 cvq_params, cls_params):
+                 cvq_params, cls_params, aa_to_id):
         super().__init__()
         # params setting
         l_dim = params['dim_latent']
-        x_dim = rna_params['dim_latent']
-        t_dim = tcr_params['dim_emb']
+        x_dim = rna_params['hvgs']
         n_codebook = cvq_params['num_codebook']
         commitment = cvq_params['commitment']
         decay = cvq_params['decay']
         num_seq_labels = tcr_params['num_seq_labels']
         
         # TCR module
-        self.alpha_encoder = TCREncoder(tcr_params, t_dim, num_seq_labels)
-        self.alpha_decoder = TCRDecoder(tcr_params, t_dim, num_seq_labels)
-        self.beta_encoder = TCREncoder(tcr_params, t_dim, num_seq_labels)
-        self.beta_decoder = TCRDecoder(tcr_params, t_dim, num_seq_labels)
+        self.alpha_encoder = TCREncoder(tcr_params, l_dim, num_seq_labels)
+        self.alpha_decoder = TCRDecoder(tcr_params, l_dim, num_seq_labels)
+        self.beta_encoder = TCREncoder(tcr_params, l_dim, num_seq_labels)
+        self.beta_decoder = TCRDecoder(tcr_params, l_dim, num_seq_labels)
         
         # RNA module
         self.rna_encoder = RNAEncoder(x_dim, l_dim)
@@ -33,11 +32,15 @@ class VQTCRModel(nn.Module):
         # Conditional VQ-VAE module
         self.vq = VQEMA(l_dim, n_codebook, commitment, decay)
         
-        # Semi_sup module
+        # Semi-supervised module for pMHC prediction
+        self.label_cls = LabelCLS(cls_params)
         
         # loss func
+        self.loss_func_rna = nn.MSELoss()
+        self.loss_func_tcr = nn.CrossEntropyLoss(ignore_index=aa_to_id['_'])
+        self.loss_func_cls = nn.CrossEntropyLoss()
     
-    def forward(self, rna, tcr, ep, train_mode='unsup'):
+    def forward(self, rna, tcr, labels, ep, train_mode='unsup'):
         alpha_seq = tcr[:, :tcr.shape[1]//2]
         beta_seq = tcr[:, tcr.shape[1]//2:]
         
@@ -54,14 +57,10 @@ class VQTCRModel(nn.Module):
         h_t = h_tcr + c_rna
         
         # vq searching
-        z, vq_loss = self.vq(h_t, ep)
+        z, loss_vq = self.vq(h_t, ep)
         
         # conditional add
         h = z + c_rna
-        
-        # sup
-        if train_mode == 'semi-sup':
-            pass
         
         # decoder
         rec_rna = self.rna_decoder(h)
@@ -69,7 +68,20 @@ class VQTCRModel(nn.Module):
         rec_beta = self.beta_decoder(h, beta_seq)
         rec_tcr = torch.cat([rec_alpha, rec_beta], dim=1)
         
-        return rec_rna, rec_tcr, vq_loss
+        # calc loss
+        loss_rna, loss_tcr = self.calc_loss(rna, rec_rna, tcr, rec_tcr)
+        
+        # supervised, constrain the discrete representation
+        if train_mode == 'semi-sup':
+            pred_labels = self.label_cls(z)
+            loss_cls = self.loss_func_cls(pred_labels, labels)
+            return loss_rna, loss_tcr, loss_vq, loss_cls
+        else:
+            return loss_rna, loss_tcr, loss_vq
     
-    def calc_loss(self):
-        pass
+    def calc_loss(self, rna, rec_rna, tcr, rec_tcr):
+        loss_rna = self.loss_func_rna(rec_rna, rna)
+        mask = torch.ones_like(tcr).bool()
+        mask[:, [0, mask.shape[1] // 2]] = False
+        loss_tcr = self.loss_func_tcr(rec_tcr.flatten(end_dim=1), tcr[mask].flatten())
+        return loss_rna, loss_tcr

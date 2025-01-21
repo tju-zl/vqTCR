@@ -7,7 +7,7 @@ def config():
             'lr': 1e-3,
             'loss_weights': [1.0, 1.0, 1.0],
             'dropout': 0.3,
-            'epoch': 1000,
+            'epoch': 200,
             
             'vq_layer': {
                 'num_codebook': 2048,
@@ -17,7 +17,7 @@ def config():
             },
             
             'rna': {
-                'dim_latent': 32,
+                'hvgs': 3000,
                 'act': 'elu',
                 'batch_norm': True,
             },
@@ -31,8 +31,11 @@ def config():
             },
             
             'cls': {
+                'dim_latent': 32,
                 'activation': 'elu',
                 'batch_norm': True,
+                'dropout': 0.3,
+                'n_labels': 7,
             }
         }
     

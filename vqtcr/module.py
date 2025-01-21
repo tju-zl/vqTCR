@@ -29,16 +29,16 @@ class TCREncoder(nn.Module):
         :param num_seq_labels: number of aa labels, input dim, 24个
         """
         super().__init__()
-        self.params = params    # ** TCR params
+        self.params = params
 
-        self.num_seq_labels = num_seq_labels    # ** 24个token
+        self.num_seq_labels = num_seq_labels
 
         self.embedding = nn.Embedding(num_seq_labels, 
                                       params['dim_emb'], 
                                       padding_idx=0)
-        self.positional_encoding = PositionalEncoding(params['dim_emb'],    # 64/32
+        self.positional_encoding = PositionalEncoding(params['dim_emb'],
                                                       params['dropout'],
-                                                      params['max_tcr_length'])    # 26
+                                                      params['max_tcr_length'])
 
         encoding_layers = nn.TransformerEncoderLayer(params['dim_emb'],
                                                      params['num_heads'],
@@ -69,7 +69,7 @@ class TCRDecoder(nn.Module):
         super().__init__()
         self.params = params
         self.hdim = hdim
-        self.num_seq_labels = num_seq_labels    # ** 24 tokens
+        self.num_seq_labels = num_seq_labels
 
         self.fc_upsample = nn.Linear(hdim, self.params['max_tcr_length'] * params['dim_emb'])
 
@@ -97,7 +97,7 @@ class TCRDecoder(nn.Module):
         :return:
         """
         hidden_state = self.fc_upsample(hidden_state)
-        shape = (hidden_state.shape[0], self.params['max_tcr_length'], self.params['embedding_size'])
+        shape = (hidden_state.shape[0], self.params['max_tcr_length'], self.params['dim_emb'])
         hidden_state = torch.reshape(hidden_state, shape)
 
         hidden_state = hidden_state.transpose(0, 1)
@@ -226,7 +226,7 @@ class VQEMA(nn.Module):
         
     def forward(self, x, ep):
         # pretrain using AE
-        if ep < 100:
+        if ep < 30:
             return x, 0
         flat_x = x.reshape(-1, self.embedding_dim)
         
@@ -276,5 +276,12 @@ class VQEMA(nn.Module):
 class LabelCLS(nn.Module):
     def __init__(self, cls_params):
         super().__init__()
-        layers = []
+        self.lin1 = nn.Linear(cls_params['dim_latent'], 16)
+        self.bn1 = nn.BatchNorm1d(16)
+        self.act = nn.ELU()
+        self.dropout = nn.Dropout(cls_params['dropuout'])
+        self.lin2 = nn.Linear(16, cls_params['n_labels'])
+    
+    def forward(self, x):
+        return self.lin2(self.dropout(self.act(self.bn1(self.lin1(x)))))
         

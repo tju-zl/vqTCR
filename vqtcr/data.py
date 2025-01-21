@@ -35,14 +35,21 @@ def get_dataloader(adata, batch_size=None, train_mode=None, sample_mode=False,
     labels_val = labels[~train_mask]
     
     # conditional define
-    conditional_train = adata.obsm[conditional][train_mask]
-    conditional_val = adata.obsm[conditional][~train_mask]
+    if conditional is not None:
+        conditional_train = adata.obsm[conditional][train_mask]
+        conditional_val = adata.obsm[conditional][~train_mask]
     
-    # generate tensor dataset
-    train_dataset = ImmuneDataset(rna_train, tcr_train, tcr_length_train, metadata_train,
-                                  labels_train, conditional_train)
-    val_dataset = ImmuneDataset(rna_val, tcr_val, tcr_length_val, metadata_val,
-                                labels_val, conditional_val)
+        # generate tensor dataset
+        train_dataset = ImmuneDataset(rna_train, tcr_train, tcr_length_train, metadata_train,
+                                    labels_train, conditional_train)
+        val_dataset = ImmuneDataset(rna_val, tcr_val, tcr_length_val, metadata_val,
+                                    labels_val, conditional_val)
+    else:
+        # generate tensor dataset
+        train_dataset = ImmuneDataset(rna_train, tcr_train, tcr_length_train, metadata_train,
+                                    labels_train)
+        val_dataset = ImmuneDataset(rna_val, tcr_val, tcr_length_val, metadata_val,
+                                    labels_val)
     
     train_loader = DataLoader(train_dataset, batch_size=batch_size, 
                               shuffle=True, worker_init_fn=seed_worker)
@@ -70,7 +77,8 @@ class ImmuneDataset(Dataset):
         self.tcr_length = torch.LongTensor(tcr_length)
         self.metadata = metadata.tolist()
         self.labels = torch.LongTensor(labels)
-        self.conditional = torch.LongTensor(conditional.argmax(1))
+        if conditional is not None:
+            self.conditional = torch.LongTensor(conditional.argmax(1))
         
     def to_tensor(self, x):
        if sparse.issparse(x):
@@ -82,9 +90,14 @@ class ImmuneDataset(Dataset):
         return len(self.rna_data)
     
     def __getitem__(self, index):
-        return self.rna_data[index], self.tcr_data[index],\
-            self.tcr_length[index], self.metadata[index],\
-            self.labels[index], self.conditional[index]
+        if self.conditional is not None:
+            return self.rna_data[index], self.tcr_data[index],\
+                self.tcr_length[index], self.metadata[index],\
+                self.labels[index], self.conditional[index]
+        else:
+            return self.rna_data[index], self.tcr_data[index],\
+                self.tcr_length[index], self.metadata[index],\
+                self.labels[index]
 
 
 def balance_sampling(adata, train_mask, key_name):
