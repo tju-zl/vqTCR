@@ -1,41 +1,42 @@
-def config():
-    
+def get_config():
     params = {
-            'seed': 2024,
+            'seed': 3407,
             'dim_latent': 64,
-            'batch_size': 512,
+            'batch_size': 4096,
             'lr': 1e-3,
-            'loss_weights': [1.0, 1.0, 1.0],
             'dropout': 0.3,
-            'epoch': 200,
+            'epoch': 100,
             
             'vq_layer': {
-                'num_codebook': 2048,
+                'num_codebook': 128,
                 'commitment': 0.25,
                 'lambda': 10,
                 'decay': 0.99,
             },
             
             'rna': {
+                'dim_latent': 64,
                 'hvgs': 3000,
                 'act': 'elu',
                 'batch_norm': True,
             },
             
             'tcr': {
+                'dim_latent': 64,
                 'dim_emb': 64,
                 'num_heads': 8,
                 'forward_expansion': 4,
+                'dropout': 0.3,
                 'num_encoder': 2,
                 'num_decoder': 2, 
             },
             
             'cls': {
-                'dim_latent': 32,
+                'dim_latent': 64,
                 'activation': 'elu',
                 'batch_norm': True,
                 'dropout': 0.3,
-                'n_labels': 7,
+                'n_labels': 8,
             }
         }
     

@@ -108,9 +108,9 @@ class TCRDecoder(nn.Module):
         target_sequence = self.embedding(target_sequence) * math.sqrt(self.num_seq_labels)
         target_sequence = target_sequence + self.positional_encoding(target_sequence)
         try:
-            target_mask = nn.Transformer.generate_square_subsequent_mask(None, target_sequence.shape[0]).to(self.device)
+            target_mask = nn.Transformer.generate_square_subsequent_mask(None, target_sequence.shape[0]).to(hidden_state.device)
         except:  # new version don't need the None
-            target_mask = nn.Transformer.generate_square_subsequent_mask(target_sequence.shape[0]).to(self.device)
+            target_mask = nn.Transformer.generate_square_subsequent_mask(target_sequence.shape[0]).to(hidden_state.device)
         x = self.transformer_decoder(target_sequence, hidden_state, tgt_mask=target_mask)
         x = self.fc_out(x)
         x = x.transpose(0, 1)
@@ -224,10 +224,7 @@ class VQEMA(nn.Module):
         # also maintain ema_cluster_size， which record the size of each embedding
         self.ema_cluster_size = ExponentialMovingAverage(torch.zeros((self.num_embeddings,)), decay)
         
-    def forward(self, x, ep):
-        # pretrain using AE
-        if ep < 30:
-            return x, 0
+    def forward(self, x):
         flat_x = x.reshape(-1, self.embedding_dim)
         
         # Use index to find embeddings in the latent space
@@ -248,7 +245,6 @@ class VQEMA(nn.Module):
               updated_ema_dw / updated_ema_cluster_size.reshape(-1, 1))
             self.embeddings.data = normalised_updated_ema_w
     
-
         # commitment loss
         e_latent_loss = F.mse_loss(x, quantized.detach())
         loss = self.commitment_cost * e_latent_loss
@@ -279,7 +275,7 @@ class LabelCLS(nn.Module):
         self.lin1 = nn.Linear(cls_params['dim_latent'], 16)
         self.bn1 = nn.BatchNorm1d(16)
         self.act = nn.ELU()
-        self.dropout = nn.Dropout(cls_params['dropuout'])
+        self.dropout = nn.Dropout(cls_params['dropout'])
         self.lin2 = nn.Linear(16, cls_params['n_labels'])
     
     def forward(self, x):
