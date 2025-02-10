@@ -1,5 +1,6 @@
 notebook/1_10XTCR.ipynb
 notebook/1_10XTCR_B.ipynb
 notebook/1_10XTCR_ss.ipynb
-PreData/
-/home/zl/vqTCR/vqtcr/__pycache__/
+pre_data/
+vqtcr/__pycache__/
+fig/
