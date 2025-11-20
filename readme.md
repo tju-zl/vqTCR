@@ -2,7 +2,7 @@ vqTCR: A Product-Quantized Representation Framework Linking TCR Specificity to T
 ===
 
 ## Overview of vqTCR
-![](https://github.com/tju-zl/vqTCR/blob/master/overview.png)
+![](https://github.com/tju-zl/vqTCR/blob/main/overview.png)
 
 
 ## Getting started
