@@ -1,0 +1,3 @@
+The adata of 10xHealth dataset exceeds the maximum file size requirement of GitHub (157MB). Please run the tutorial `prep_10xHealth.ipynb` to get the processed data.
+
+10xHealth download: https://www.10xgenomics.com/datasets?query=A%20New%20Way%20of%20Exploring%20Immunity&menu%5Bproducts.name%5D=Single%20Cell%20Immune%20Profiling&page=1&configure%5BhitsPerPage%5D=50&configure%5BmaxValuesPerFacet%5D=1000
