@@ -3,7 +3,7 @@ vqTCR: A Product-Quantized Representation Framework Linking TCR Specificity to T
 
 ## Overview of vqTCR
 ![](https://github.com/tju-zl/vqTCR/blob/main/overview.png)
-
+We present vqTCR, a product vector-quantized variational autoencoder that learns a combinatorial latent discrete representation linking TCR specificity to functional transcriptional programs. By utilizing product quantization, vqTCR decomposes this T cell latent space into multiple subspaces, yielding discrete, interpretable T cell prototypes that capture the relationship between receptor specificity and functional states while maintaining representational flexibility. To further disentangle global and context-dependent expression, vqTCR incorporates a prototype baseline transcription module together with FiLM-modulated residual gene expressions, allowing the model to separate functional expression prototype from context-specific transcriptional transition that may vary across clonotypes, samples, or cell types.
 
 ## Getting started
 1. Tutorials of preprocessing the adaptive immune data: refer to folder `pre_data`.
